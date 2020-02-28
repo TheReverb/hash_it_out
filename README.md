@@ -1,4 +1,3 @@
-# CSCI 389
+# CSCI 389 Homework 2
 ### Spring 2020
-### Homework 2
 ### Jonah Kohn and Elijah Wheelock
