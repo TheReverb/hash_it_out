@@ -5,26 +5,74 @@ class Cache {
  private:
    // All internal data and functionality is hidden using the Pimpl idiom
    // (see here: https://www.fluentcpp.com/2017/09/22/make-pimpl-using-unique_ptr/)
+std::unique_ptr<Impl> pImpl_;
+
   class Impl {
    private:
-    size_type maxmem;
-    float     max_load_factor;
-    Evictor*  evictor;
-    hash_func hasher;
+    size_type maxmem_;
+    float     max_load_factor_;
+    Evictor*  evictor_;
+    hash_func hasher_;
+
+    size_type current_size_; //in uint32_t
 
    public:
-    Impl(size_type maxmem_,
-         float     max_load_factor_ = 0.75,
-         Evictor*  evictor_         = nullptr,
-         hash_func hasher_          = std::hash<key_type>()) {
 
-      size_type maxmem          = maxmem_;
-      float     max_load_factor = max_load_factor_;
-      Evictor*  evictor         = evictor_;
-      hash_func hasher          = hasher_;
+    Impl(size_type maxmem,
+         float     max_load_factor = 0.75,
+         Evictor*  evictor         = nullptr,
+         hash_func hasher          = std::hash<key_type>())
+    : maxmem_(maxmem), max_load_factor_(max_load_factor), evictor_(evictor), hasher_(hasher), current_size_(10){ //eitan-approved method for setting class member varaibles via constructor arguments
+
+    } //for now, our constructor body is empty.
+
+
+    ~Impl(){  //this will most likely involve calling reset().
+
     }
-  }
-  std::unique_ptr<Impl> pImpl_;
+
+
+    void set(key_type key, val_type val, size_type size){
+      //first, check whether adding this element would cause the current load factor to exceed max load factor.
+      //if yes: increase maxmem and redistribute key/pointer pairs via the function resize().
+
+      //then:
+
+      // call the hash function using key, store pointer. if the key already points at an existing value, simply overwrite.
+      // take the pointer it returns, store **a deep copy** of val at that location.
+      // update current_size, current_load_factor,
+
+    }
+
+
+    val_type get(key_type key, size_type& val_size) const{
+      // Retrieve a pointer to the value associated with key in the cache,
+      // or nullptr if not found.
+      // Sets the actual size of the returned value (in bytes) in val_size.
+    }
+
+
+    bool del(key_type key) {
+      //check if object is in cache, potentially by calling get().
+      //if it isn't, return false.
+
+      //if it is, free the space in the cache by removing the key/value pair from the hashtable, then return true.
+    }
+
+
+    size_type space_used() const {
+      return current_size_; //this one should be simple :)
+    }
+
+
+    void reset() {
+      // unsure about the implementation of this one. Potentially calling del() on every key in the hashtable?
+      // it might be as simple as removing keys from the hastable, and considering them as good as erased.
+
+    }
+
+  };  //Impl
+
 
  public:
   using byte_type = char;
@@ -85,6 +133,6 @@ class Cache {
 
   // Delete all data from the cache
   void reset() {
-    pImpl_->reset();
+    return pImpl_->reset();
   }
 };
