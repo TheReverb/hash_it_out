@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unordered_map>
 
+
 class Cache {
  private:
    // All internal data and functionality is hidden using the Pimpl idiom
@@ -13,8 +14,16 @@ std::unique_ptr<Impl> pImpl_;
     float     max_load_factor_;
     Evictor*  evictor_;
     hash_func hasher_;
-
+    std::unordered_map<key_type, val_type, hash_func> data_;
     size_type current_size_; //in uint32_t
+
+    size_type size_of_val(val_type v) {
+      size_type size = 0;
+      while (v[size] != 0) {
+        size++;
+      }
+      return size;
+    }
 
    public:
 
@@ -22,28 +31,39 @@ std::unique_ptr<Impl> pImpl_;
          float     max_load_factor = 0.75,
          Evictor*  evictor         = nullptr,
          hash_func hasher          = std::hash<key_type>())
-    : maxmem_(maxmem), max_load_factor_(max_load_factor), evictor_(evictor), hasher_(hasher), current_size_(10){ //eitan-approved method for setting class member varaibles via constructor arguments
-
-    } //for now, our constructor body is empty.
-
-
-    ~Impl(){  //this will most likely involve calling reset().
-
+    : maxmem_(maxmem), 
+      max_load_factor_(max_load_factor),
+      evictor_(evictor),
+      hasher_(hasher),
+      current_size_(10) 
+    {
+      std::unordered_map<key_type, val_type, hash_func> data_;
     }
 
+    ~Impl(){ //this will most likely involve calling reset().
+      delete data_;
+      delete evictor_;
+      assert(false);
+    }
 
     void set(key_type key, val_type val, size_type size){
       //first, check whether adding this element would cause the current load factor to exceed max load factor.
-      //if yes: increase maxmem and redistribute key/pointer pairs via the function resize().
-
-      //then:
-
-      // call the hash function using key, store pointer. if the key already points at an existing value, simply overwrite.
-      // take the pointer it returns, store **a deep copy** of val at that location.
-      // update current_size, current_load_factor,
-
+      //  if yes: increase maxmem and redistribute key/pointer pairs via the function resize().
+      if (current_size_ + size > max_load_factor * maxmem_) {
+        resize()
+      }
+    /* call the hash function using key, store pointer.
+       if the key already points at an existing value, simply overwrite.
+    */
+      val_type* copy = new val_type* (*val);
+      data.insert_or_assign(hasher_(key), copy);
+      current_size += size;
+      assert(false);
     }
 
+    void resize() {
+      assert(false);
+    }
 
     val_type get(key_type key, size_type& val_size) const{
       // Retrieve a pointer to the value associated with key in the cache,
@@ -51,27 +71,27 @@ std::unique_ptr<Impl> pImpl_;
       // Sets the actual size of the returned value (in bytes) in val_size.
     }
 
-
     bool del(key_type key) {
-      //check if object is in cache, potentially by calling get().
-      //if it isn't, return false.
+      assert(false);
+      /*
+      check if object is in cache, potentially by calling get().
+      if it isn't, return false.
 
-      //if it is, free the space in the cache by removing the key/value pair from the hashtable, then return true.
+      if it is, free the space in the cache by removing the key/value pair from the hashtable, then return true.
+      */
     }
-
 
     size_type space_used() const {
       return current_size_; //this one should be simple :)
+      // shouldn't this be maxmem?
     }
-
 
     void reset() {
+      assert(false);
       // unsure about the implementation of this one. Potentially calling del() on every key in the hashtable?
-      // it might be as simple as removing keys from the hastable, and considering them as good as erased.
-
+      // it might be as simple as removing keys from the hashtable, and considering them as good as erased.
     }
-
-  };  //Impl
+  };
 
 
  public:
