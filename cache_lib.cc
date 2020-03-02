@@ -15,10 +15,22 @@ std::unique_ptr<Impl> pImpl_;
     hash_func hasher_;
     std::unordered_map<key_type, val_type, hash_func> data_;
     size_type current_size_; //in uint32_t
-    
-    struct cache_element {
+
+    class cache_element {
+      public:
         size_type size;
         val_type* val_p;
+
+        cache_element(size_type elem_size, val_type* elem_val) //figure out what elem val reference should be
+        : size(elem_size)
+        , val_p(elem_val) //might need to dereference
+        {}
+
+        ~cache_element(){
+          delete val_p;
+          delete size;
+        }
+
     };
 
     size_type size_of_val(val_type v) {
@@ -39,7 +51,7 @@ std::unique_ptr<Impl> pImpl_;
     , max_load_factor_(max_load_factor)
     , evictor_(evictor)
     , hasher_(hasher)
-    , current_size_(0) 
+    , current_size_(0)
     {
       std::unordered_map<key_type, val_type, hash_func>(hash=hasher_) data_;
       data_.max_load_factor(max_load_factor_);
@@ -53,13 +65,13 @@ std::unique_ptr<Impl> pImpl_;
 
     void set(key_type key, val_type val, size_type size){
       while (current_size + size > maxmem_) {
-        key_type evictee = evictor_.evict();
+        key_type evictee = evictor_->evict();
         current_size_ -= data_[evictee].size;
         del(evictee);
       }
       elem = cache_element(size, new val_type(val)); // BUG?? // Ask Eitan: sizeof(size_type)?
       data.insert_or_assign(key, elem);
-      evictor_.touch_key(&key);
+      evictor_->touch_key(&key);
       current_size_ += size;
     }
 
@@ -69,28 +81,21 @@ std::unique_ptr<Impl> pImpl_;
       else {
         elem = elem_iter->second;
         *val_size = elem.size;
-        evictor_.touch_key(key);
+        evictor_->touch_key(key);
         return elem.val_p;
       }
     }
 
     bool del(key_type key) {
       elem_iter = data_.find(key);
-      if (elem_iter != data_.end()) { return false; }
+      if (elem_iter == data_.end()) { return false; }
       else {
         elem = elem_iter->second;
+        current_size_ -= elem.size;
+        //do we need to evict this element? how?
         delete elem;
-        
-        evictor_.touch_key(key);
+        return true;
       }
-      
-      assert(false);
-      /*
-      check if object is in cache, potentially by calling get().
-      if it isn't, return false.
-
-      if it is, free the space in the cache by removing the key/value pair from the hashtable, then return true.
-      */
     }
 
     size_type space_used() const {
@@ -98,11 +103,15 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     void reset() {
-      assert(false);
-      // unsure about the implementation of this one. Potentially calling del() on every key in the hashtable?
-      // it might be as simple as removing keys from the hashtable, and considering them as good as erased.
+      for(auto iter = data_.begin(); iter != data_.end(); iter++){
+        delete iter->first; //this might be second, either the pointer or the value to be passed.
+        //how do we clear the evictor?
+      }
+    current_size_ = 0;
+    // somehow make sure evictor is clean.
     }
-  };
+
+  }; //end Impl
 
 
  public:
