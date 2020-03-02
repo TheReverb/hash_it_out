@@ -54,13 +54,13 @@ std::unique_ptr<Impl> pImpl_;
     void set(key_type key, val_type val, size_type size){
       while (current_size + size > maxmem_) {
         key_type evictee = evictor_.evict();
-        current_size -= data_[evictee].size;
+        current_size_ -= data_[evictee].size;
         del(evictee);
       }
       elem = cache_element(size, new val_type(val)); // BUG?? // Ask Eitan: sizeof(size_type)?
       data.insert_or_assign(key, elem);
       evictor_.touch_key(&key);
-      current_size += size;
+      current_size_ += size;
     }
 
     val_type get(key_type key, size_type& val_size) const{
@@ -75,6 +75,15 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     bool del(key_type key) {
+      elem_iter = data_.find(key);
+      if (elem_iter != data_.end()) { return false; }
+      else {
+        elem = elem_iter->second;
+        delete elem;
+        
+        evictor_.touch_key(key);
+      }
+      
       assert(false);
       /*
       check if object is in cache, potentially by calling get().
@@ -86,7 +95,6 @@ std::unique_ptr<Impl> pImpl_;
 
     size_type space_used() const {
       return current_size_; //this one should be simple :)
-      // shouldn't this be maxmem?
     }
 
     void reset() {
