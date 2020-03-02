@@ -1,7 +1,6 @@
 #include <iostream>
 #include <unordered_map>
 
-
 class Cache {
  private:
    // All internal data and functionality is hidden using the Pimpl idiom
@@ -16,6 +15,11 @@ std::unique_ptr<Impl> pImpl_;
     hash_func hasher_;
     std::unordered_map<key_type, val_type, hash_func> data_;
     size_type current_size_; //in uint32_t
+    
+    struct cache_element {
+        size_type size;
+        val_type* val;
+    };
 
     size_type size_of_val(val_type v) {
       size_type size = 0;
@@ -37,7 +41,7 @@ std::unique_ptr<Impl> pImpl_;
     , hasher_(hasher)
     , current_size_(0) 
     {
-      std::unordered_map<key_type, val_type, hash_func> data_;
+      std::unordered_map<key_type, val_type, hash_func>(hash=hasher_) data_;
       data_.max_load_factor(max_load_factor_);
     }
 
@@ -48,10 +52,15 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     void set(key_type key, val_type val, size_type size){
-      val_type* copy = new val_type(val);
-      data.insert_or_assign(hasher_(key), copy);
+      while (current_size + size > maxmem_) {
+        key_type evictee = evictor_.evict();
+        current_size -= data_[evictee].size;
+        del(evictee);
+      }
+      elem = cache_element(size, new val_type(val)); // BUG?? // Ask Eitan: sizeof(size_type)?
+      data.insert_or_assign(key, elem);
+      evictor_.touch_key(&key);
       current_size += size;
-      assert(false);
     }
 
     val_type get(key_type key, size_type& val_size) const{
