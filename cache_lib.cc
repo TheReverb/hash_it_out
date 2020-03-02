@@ -11,7 +11,7 @@ std::unique_ptr<Impl> pImpl_;
   class Impl {
    private:
     size_type maxmem_;
-    float     max_load_factor_;
+    float     max_load_factor_ = 0.75;
     Evictor*  evictor_;
     hash_func hasher_;
     std::unordered_map<key_type, val_type, hash_func> data_;
@@ -31,13 +31,14 @@ std::unique_ptr<Impl> pImpl_;
          float     max_load_factor = 0.75,
          Evictor*  evictor         = nullptr,
          hash_func hasher          = std::hash<key_type>())
-    : maxmem_(maxmem), 
-      max_load_factor_(max_load_factor),
-      evictor_(evictor),
-      hasher_(hasher),
-      current_size_(10) 
+    : maxmem_(maxmem)
+    , max_load_factor_(max_load_factor)
+    , evictor_(evictor)
+    , hasher_(hasher)
+    , current_size_(0) 
     {
       std::unordered_map<key_type, val_type, hash_func> data_;
+      data_.max_load_factor(max_load_factor_);
     }
 
     ~Impl(){ //this will most likely involve calling reset().
@@ -47,21 +48,9 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     void set(key_type key, val_type val, size_type size){
-      //first, check whether adding this element would cause the current load factor to exceed max load factor.
-      //  if yes: increase maxmem and redistribute key/pointer pairs via the function resize().
-      if (current_size_ + size > max_load_factor * maxmem_) {
-        resize()
-      }
-    /* call the hash function using key, store pointer.
-       if the key already points at an existing value, simply overwrite.
-    */
-      val_type* copy = new val_type* (*val);
+      val_type* copy = new val_type(val);
       data.insert_or_assign(hasher_(key), copy);
       current_size += size;
-      assert(false);
-    }
-
-    void resize() {
       assert(false);
     }
 
@@ -133,7 +122,7 @@ std::unique_ptr<Impl> pImpl_;
   // from the cache to accomodate the new value. If unable, the new value
   // isn't inserted to the cache.
   void set(key_type key, val_type val, size_type size) {
-    impl_->set(key_type key, val_type val, size_type size);
+    impl_->set(key, val, size);
   }
 
   // Retrieve a pointer to the value associated with key in the cache,
