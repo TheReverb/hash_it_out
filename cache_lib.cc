@@ -18,7 +18,7 @@ std::unique_ptr<Impl> pImpl_;
     
     struct cache_element {
         size_type size;
-        val_type* val;
+        val_type* val_p;
     };
 
     size_type size_of_val(val_type v) {
@@ -64,9 +64,14 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     val_type get(key_type key, size_type& val_size) const{
-      // Retrieve a pointer to the value associated with key in the cache,
-      // or nullptr if not found.
-      // Sets the actual size of the returned value (in bytes) in val_size.
+      elem_iter = data_.find(key);
+      if (elem_iter == data_.end()) { return nullptr; }
+      else {
+        elem = elem_iter->second;
+        *val_size = elem.size;
+        evictor_.touch_key(key);
+        return elem.val_p;
+      }
     }
 
     bool del(key_type key) {
