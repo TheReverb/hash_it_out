@@ -70,13 +70,22 @@ std::unique_ptr<Impl> pImpl_;
           current_size_ -= data_[evictee].size;
           del(evictee);
         }
+        if (current_size_ + size < maxmem_) {
+            // BUG?? // Ask Eitan: sizeof(size_type)?
+            elem = cache_element(size, new val_type(val));
+            data.insert_or_assign(key, elem);
+            evictor_->store(&key);
+            evictor_->touch_key(&key);
+            current_size_ += size;
+        }
       }
-      if (current_size_ + size < maxmem_) {
-          // BUG?? // Ask Eitan: sizeof(size_type)?
-          elem = cache_element(size, new val_type(val));
-          data.insert_or_assign(key, elem);
-          evictor_->touch_key(&key);
-          current_size_ += size;
+      else if (current_size_ + size < maxmem_) {
+            // BUG?? // Ask Eitan: sizeof(size_type)?
+            elem = cache_element(size, new val_type(val));
+            data.insert_or_assign(key, elem);
+            evictor_->store(&key);
+            evictor_->touch_key(&key);
+            current_size_ += size;
       }
     }
 
