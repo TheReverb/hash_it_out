@@ -1,5 +1,7 @@
 #include <iostream>
 #include <unordered_map>
+#include "fifo_evictor.cc"
+#include "cache.hh"
 
 class Cache {
  private:
