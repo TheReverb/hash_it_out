@@ -3,17 +3,23 @@
 #include "fifo_evictor.cc"
 #include "cache.hh"
 
+using byte_type = char;
+using val_type = const byte_type*;
+using size_type = uint32_t;
+
 class Cache::Impl {
  private:
   class cache_element {
     public:
       size_type size;
-      val_type* val_p;
+      val_type val_p;
 
-      cache_element(size_type elem_size, val_type* elem_val) //figure out what elem val reference should be
+      cache_element(size_type elem_size, val_type elem_val) //figure out what elem val reference should be
       : size(elem_size)
       , val_p(elem_val) // might need to dereference
-      {}
+      {
+        //copy val
+      }
 
       ~cache_element(){
         delete val_p;
@@ -55,7 +61,8 @@ class Cache::Impl {
       }
       if (current_size_ + size < maxmem_) {
           // BUG?? // Ask Eitan: sizeof(size_type)?
-          cache_element elem = cache_element(size, new val_type(val));
+
+          cache_element elem = cache_element(size, val);
           data_.insert_or_assign(key, elem);
           evictor_->store(key);
           evictor_->touch_key(key);
@@ -64,7 +71,7 @@ class Cache::Impl {
     }
     else if (current_size_ + size < maxmem_) {
           // BUG?? // Ask Eitan: sizeof(size_type)?
-          cache_element elem = cache_element(size, new val_type(val));
+          cache_element elem = cache_element(size, val);
           data_.insert_or_assign(key, elem);
           evictor_->store(key);
           evictor_->touch_key(key);
@@ -84,13 +91,14 @@ class Cache::Impl {
   }
 
   bool del(key_type key) {
-    elem_iter = data_.find(key);
+    auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return false; }
     else {
-      elem = elem_iter->second;
+      cache_element elem = elem_iter->second;
       current_size_ -= elem.size;
-      // do we need to evict this element? how?
-      delete elem;
+      evictor_->remove(key);
+      // make sure that elem is actually gone!!!!!!
+      data_.erase(key);
       return true;
     }
   }
@@ -100,12 +108,9 @@ class Cache::Impl {
   }
 
   void reset() {
-    for(auto iter = data_.begin(); iter != data_.end(); iter++){
-      delete iter->first;
-      // how do we clear the evictor?
-    }
-  current_size_ = 0;
-  // somehow make sure evictor is clean.
+    data_.clear();
+    evictor_->reset();
+    current_size_ = 0;
   }
 
 }; //end Impl
@@ -117,18 +122,17 @@ class Cache::Impl {
 // and new insertions fail after maxmem has been exceeded).
 // hasher: Hash function to use on the keys. Defaults to C++'s std::hash.
 Cache::Cache(size_type maxmem,
-      float max_load_factor = 0.75,
-      Evictor* evictor = nullptr,
-      hash_func hasher = std::hash<key_type>()) {
-  std::unique_ptr<Impl> pImpl_ = new Impl(maxmem,
+             float max_load_factor,
+             Evictor* evictor,
+             hash_func hasher)
+{
+  std::unique_ptr<Impl> pImpl_(new Impl(maxmem,
                                           max_load_factor,
-                                          evictor,
-                                          hasher);
+                                          new FifoEvictor(),
+                                          hasher));
 }
 
-Cache::~Cache() {
-  delete pImpl_;
-}
+Cache::~Cache() = default;
 
 // Add a <key, value> pair to the cache.
 // If key already exists, it will overwrite the old value.
@@ -137,13 +141,15 @@ Cache::~Cache() {
 // from the cache to accomodate the new value. If unable, the new value
 // isn't inserted to the cache.
 void Cache::set(key_type key, val_type val, size_type size) {
-  impl_->set(key, val, size);
+  pImpl_->set(key, val, size);
 }
 
 // Retrieve a pointer to the value associated with key in the cache,
 // or nullptr if not found.
 // Sets the actual size of the returned value (in bytes) in val_size.
-val_type get(key_type key, size_type& val_size) const;
+val_type Cache::get(key_type key, size_type &val_size) const {
+  return pImpl_->get(key, val_size);
+}
 
 // Delete an object from the cache, if it's still there
 bool Cache::del(key_type key) {
@@ -159,4 +165,3 @@ size_type Cache::space_used() const {
 void Cache::reset() {
   return pImpl_->reset();
 }
-};
