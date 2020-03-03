@@ -64,15 +64,20 @@ std::unique_ptr<Impl> pImpl_;
     }
 
     void set(key_type key, val_type val, size_type size){
-      while (current_size + size > maxmem_) {
-        key_type evictee = evictor_->evict();
-        current_size_ -= data_[evictee].size;
-        del(evictee);
+      if (evictor != nullptr) {
+        while (current_size_ + size > maxmem_) {
+          key_type evictee = evictor_->evict();
+          current_size_ -= data_[evictee].size;
+          del(evictee);
+        }
       }
-      elem = cache_element(size, new val_type(val)); // BUG?? // Ask Eitan: sizeof(size_type)?
-      data.insert_or_assign(key, elem);
-      evictor_->touch_key(&key);
-      current_size_ += size;
+      if (current_size_ + size < maxmem_) {
+          // BUG?? // Ask Eitan: sizeof(size_type)?
+          elem = cache_element(size, new val_type(val));
+          data.insert_or_assign(key, elem);
+          evictor_->touch_key(&key);
+          current_size_ += size;
+      }
     }
 
     val_type get(key_type key, size_type& val_size) const{
@@ -92,7 +97,7 @@ std::unique_ptr<Impl> pImpl_;
       else {
         elem = elem_iter->second;
         current_size_ -= elem.size;
-        //do we need to evict this element? how?
+        // do we need to evict this element? how?
         delete elem;
         return true;
       }
@@ -104,8 +109,8 @@ std::unique_ptr<Impl> pImpl_;
 
     void reset() {
       for(auto iter = data_.begin(); iter != data_.end(); iter++){
-        delete iter->first; //this might be second, either the pointer or the value to be passed.
-        //how do we clear the evictor?
+        delete iter->first;
+        // how do we clear the evictor?
       }
     current_size_ = 0;
     // somehow make sure evictor is clean.
