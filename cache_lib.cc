@@ -12,7 +12,7 @@ class Cache::Impl {
 
       cache_element(size_type elem_size, val_type* elem_val) //figure out what elem val reference should be
       : size(elem_size)
-      , val_p(elem_val) //might need to dereference
+      , val_p(elem_val) // might need to dereference
       {}
 
       ~cache_element(){
@@ -57,27 +57,27 @@ class Cache::Impl {
           // BUG?? // Ask Eitan: sizeof(size_type)?
           cache_element elem = cache_element(size, new val_type(val));
           data_.insert_or_assign(key, elem);
-          evictor_->store(&key);
-          evictor_->touch_key(&key);
+          evictor_->store(key);
+          evictor_->touch_key(key);
           current_size_ += size;
       }
     }
     else if (current_size_ + size < maxmem_) {
           // BUG?? // Ask Eitan: sizeof(size_type)?
-          elem = cache_element(size, new val_type(val));
-          data.insert_or_assign(key, elem);
-          evictor_->store(&key);
-          evictor_->touch_key(&key);
+          cache_element elem = cache_element(size, new val_type(val));
+          data_.insert_or_assign(key, elem);
+          evictor_->store(key);
+          evictor_->touch_key(key);
           current_size_ += size;
     }
   }
 
   val_type get(key_type key, size_type& val_size) const{
-    elem_iter = data_.find(key);
+    auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return nullptr; }
     else {
-      elem = elem_iter->second;
-      *val_size = elem.size;
+      cache_element elem = elem_iter->second;
+      val_size = elem.size;
       evictor_->touch_key(key);
       return elem.val_p;
     }
