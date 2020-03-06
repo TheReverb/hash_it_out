@@ -1,6 +1,8 @@
 #include <iostream>
 #include <unordered_map>
-#include "fifo_evictor.cc"
+#include <stdio.h>
+#include <string.h>
+#include "fifo_evictor.hh"
 #include "cache.hh"
 
 using byte_type = char;
@@ -18,9 +20,9 @@ class Cache::Impl {
       : size(elem_size)
       , val_p(elem_val) // might need to dereference
       {
-        val_type val_p;
-        memcpy(val_p, elem_val, elem_size) //this should copy the data at pointer elem_val to pointer val_p, given the size.
-        //should solve our deep copy problems. 
+        void* val_p;
+        memcpy(val_p, elem_val, elem_size); //this should copy the data at pointer elem_val to pointer val_p, given the size.
+        //should solve our deep copy problems.
 
       }
 
