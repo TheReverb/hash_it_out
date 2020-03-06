@@ -18,7 +18,10 @@ class Cache::Impl {
       : size(elem_size)
       , val_p(elem_val) // might need to dereference
       {
-        //copy val
+        val_type val_p;
+        memcpy(val_p, elem_val, elem_size) //this should copy the data at pointer elem_val to pointer val_p, given the size.
+        //should solve our deep copy problems. 
+
       }
 
       ~cache_element(){
@@ -80,24 +83,24 @@ class Cache::Impl {
   }
 
   val_type get(key_type key, size_type& val_size) const{
-    auto elem_iter = data_.find(key);
-    if (elem_iter == data_.end()) { return nullptr; }
-    else {
-      cache_element elem = elem_iter->second;
-      val_size = elem.size;
-      evictor_->touch_key(key);
-      return elem.val_p;
-    }
+
+    auto elem = data_.at(key);
+    // auto elem_iter = data_.find(key);
+    // if (elem_iter == data_.end()) { return nullptr; }
+    // else {
+      // cache_element elem = elem_iter->second;
+    val_size = elem.size;
+    evictor_->touch_key(key);
+    return elem.val_p;
   }
 
   bool del(key_type key) {
     auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return false; }
     else {
-      cache_element elem = elem_iter->second;
-      current_size_ -= elem.size;
+      // cache_element elem = elem_iter->second;
+      // current_size_ -= elem.size;
       evictor_->remove(key);
-      // make sure that elem is actually gone!!!!!!
       data_.erase(key);
       return true;
     }
