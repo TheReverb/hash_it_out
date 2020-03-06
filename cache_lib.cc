@@ -62,9 +62,10 @@ class Cache::Impl {
       while (current_size_ + size > maxmem_) {
         const key_type evictee_key = evictor_->evict();
         const auto elemi = data_.find(evictee_key);
-        //TODO: handle improper iterator
-        current_size_ -= elemi->second.size;
-        del(evictee_key);
+        if (elemi != data_.end()) {
+          current_size_ -= elemi->second.size;
+          del(evictee_key);
+        }
       }
       if (current_size_ + size < maxmem_) {
           const CacheElement new_elem(size, val);
@@ -82,7 +83,7 @@ class Cache::Impl {
   }
 
   val_type get(key_type key, size_type& val_size) const{
-    auto elem = data_.at(key);
+    const auto elem = data_.at(key);
     // auto elem_iter = data_.find(key);
     // if (elem_iter == data_.end()) { return nullptr; }
     // else {
@@ -93,12 +94,13 @@ class Cache::Impl {
   }
 
   bool del(key_type key) {
-    auto elem_iter = data_.find(key);
+    const auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return false; }
     else {
-      // CacheElement elem = elem_iter->second;
-      // current_size_ -= elem.size;
-      evictor_->remove(key);
+      CacheElement elem = elem_iter->second;
+      current_size_ -= elem.size;
+      // evictor_->remove(key);
+          // we don't need to evict the key; if it gets evicted later, we'll just ignore it.
       data_.erase(key);
       return true;
     }
@@ -110,7 +112,7 @@ class Cache::Impl {
 
   void reset() {
     data_.clear();
-    evictor_->reset();
+    while (evictor_->evict() != "") {}
     current_size_ = 0;
   }
 }; //end Impl
@@ -127,9 +129,9 @@ Cache::Cache(size_type maxmem,
              hash_func hasher)
 {
   std::unique_ptr<Impl> pImpl_(new Impl(maxmem,
-                                          max_load_factor,
-                                          new FifoEvictor(),
-                                          hasher));
+                                        max_load_factor,
+                                        new FifoEvictor(),
+                                        hasher));
 }
 
 Cache::~Cache() = default;

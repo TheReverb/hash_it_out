@@ -6,7 +6,7 @@ FifoEvictor::FifoEvictor() {
   std::list<key_type> q_ = std::list<key_type>();
 }
 
-void FifoEvictor::touch_key(const key_type& key_p) {}
+void FifoEvictor::touch_key(const key_type& key) {}
 
 // Request evictor for the next key to evict, and remove it from evictor.
 // If evictor doesn't know what to evict, return an empty key ("").
@@ -17,14 +17,7 @@ const key_type FifoEvictor::evict() {
   return result;
 }
 
-void FifoEvictor::store(key_type key) {
+void FifoEvictor::store(const key_type key) {
   q_.push_back(key);
 }
 
-void FifoEvictor::remove(key_type key) {
-  q_.remove(key);
-}
-
-void FifoEvictor::reset() {
-  q_.clear();
-}
