@@ -11,44 +11,45 @@ using size_type = uint32_t;
 
 class Cache::Impl {
  private:
-  class cache_element {
+  class CacheElement {
     public:
       size_type size;
       val_type val_p;
 
-      cache_element(size_type elem_size, val_type elem_val) //figure out what elem val reference should be
+      CacheElement(size_type elem_size, val_type elem_val)
       : size(elem_size)
-      , val_p(elem_val) // might need to dereference
+      , val_p(elem_val)
       {
-        void* val_p;
-        memcpy(val_p, elem_val, elem_size); //this should copy the data at pointer elem_val to pointer val_p, given the size.
-        //should solve our deep copy problems.
-
+        val_type* val_p;
+        memcpy(val_p, elem_val, elem_size); // replace with copy
       }
 
-      ~cache_element(){
+      CacheElement(const CacheElement& elem) = default;
+
+      ~CacheElement(){
         delete val_p;
       }
-  }; // end cache_element
+  }; // end CacheElement
+
   size_type maxmem_;
   float     max_load_factor_ = 0.75;
   FifoEvictor*  evictor_;
   hash_func hasher_;
-  std::unordered_map<key_type, cache_element, hash_func> data_;
+  std::unordered_map<key_type, CacheElement, hash_func> data_;
   size_type current_size_; //in uint32_t
 
  public:
-  Impl(size_type maxmem,
-       float     max_load_factor     = 0.75,
-       FifoEvictor*  evictor         = nullptr,
-       hash_func hasher              = std::hash<key_type>())
+  Impl(size_type    maxmem,
+       float        max_load_factor = 0.75,
+       FifoEvictor* evictor         = nullptr,
+       hash_func    hasher          = std::hash<key_type>())
   : maxmem_(maxmem)
   , max_load_factor_(max_load_factor)
   , evictor_(evictor)
   , hasher_(hasher)
   , current_size_(0)
+  , data_(std::unordered_map<key_type, CacheElement, hash_func>(16, hasher_))
   {
-    std::unordered_map<key_type, cache_element, hash_func> data_ = std::unordered_map<key_type, cache_element, hash_func>(16, hasher_);
     data_.max_load_factor(max_load_factor_);
   }
 
@@ -59,38 +60,33 @@ class Cache::Impl {
   void set(key_type key, val_type val, size_type size){
     if (evictor_ != nullptr) {
       while (current_size_ + size > maxmem_) {
-        key_type evictee = evictor_->evict();
-        cache_element elem = data_[evictee];
-        current_size_ -= elem.size;
-        del(evictee);
+        const key_type evictee_key = evictor_->evict();
+        const auto elemi = data_.find(evictee_key);
+        //TODO: handle improper iterator
+        current_size_ -= elemi->second.size;
+        del(evictee_key);
       }
       if (current_size_ + size < maxmem_) {
-          // BUG?? // Ask Eitan: sizeof(size_type)?
-
-          cache_element elem = cache_element(size, val);
-          data_.insert_or_assign(key, elem);
+          const CacheElement new_elem(size, val);
+          data_.insert_or_assign(key, new_elem);
           evictor_->store(key);
           evictor_->touch_key(key);
           current_size_ += size;
       }
     }
     else if (current_size_ + size < maxmem_) {
-          // BUG?? // Ask Eitan: sizeof(size_type)?
-          cache_element elem = cache_element(size, val);
-          data_.insert_or_assign(key, elem);
-          evictor_->store(key);
-          evictor_->touch_key(key);
+          const CacheElement new_elem(size, val);
+          data_.insert_or_assign(key, new_elem);
           current_size_ += size;
     }
   }
 
   val_type get(key_type key, size_type& val_size) const{
-
     auto elem = data_.at(key);
     // auto elem_iter = data_.find(key);
     // if (elem_iter == data_.end()) { return nullptr; }
     // else {
-      // cache_element elem = elem_iter->second;
+      // CacheElement elem = elem_iter->second;
     val_size = elem.size;
     evictor_->touch_key(key);
     return elem.val_p;
@@ -100,7 +96,7 @@ class Cache::Impl {
     auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return false; }
     else {
-      // cache_element elem = elem_iter->second;
+      // CacheElement elem = elem_iter->second;
       // current_size_ -= elem.size;
       evictor_->remove(key);
       data_.erase(key);
@@ -109,7 +105,7 @@ class Cache::Impl {
   }
 
   size_type space_used() const {
-    return current_size_; //this one should be simple :)
+    return current_size_;
   }
 
   void reset() {
@@ -117,7 +113,6 @@ class Cache::Impl {
     evictor_->reset();
     current_size_ = 0;
   }
-
 }; //end Impl
 
 // Create a new cache object with the following parameters:
