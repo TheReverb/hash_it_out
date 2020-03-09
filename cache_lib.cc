@@ -20,7 +20,7 @@ class Cache::Impl {
       : size(elem_size)
       , val_p(elem_val)
       {
-        val_type* val_p;
+        byte_type* val_p = nullptr; 
         memcpy(val_p, elem_val, elem_size); // replace with copy
       }
 
@@ -35,8 +35,8 @@ class Cache::Impl {
   float     max_load_factor_ = 0.75;
   FifoEvictor*  evictor_;
   hash_func hasher_;
-  std::unordered_map<key_type, CacheElement, hash_func> data_;
   size_type current_size_; //in uint32_t
+  std::unordered_map<key_type, CacheElement, hash_func> data_;
 
  public:
   Impl(size_type    maxmem,
@@ -67,10 +67,10 @@ class Cache::Impl {
           del(evictee_key);
         }
       }
+
       if (current_size_ + size < maxmem_) {
           const CacheElement new_elem(size, val);
           data_.insert_or_assign(key, new_elem);
-          evictor_->store(key);
           evictor_->touch_key(key);
           current_size_ += size;
       }

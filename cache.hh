@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-#include "evictor.hh"
+#include "fifo_evictor.hh"
 
 class Cache {
  private:
@@ -64,4 +64,3 @@ class Cache {
   // Delete all data from the cache
   void reset();
 };
-
