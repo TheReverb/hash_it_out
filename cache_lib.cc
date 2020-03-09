@@ -20,7 +20,7 @@ class Cache::Impl {
       : size(elem_size)
       , val_p(elem_val)
       {
-        byte_type* val_p = nullptr; 
+        val_type* val_p;
         memcpy(val_p, elem_val, elem_size); // replace with copy
       }
 
