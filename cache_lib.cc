@@ -20,8 +20,8 @@ class Cache::Impl {
       : size(elem_size)
       , val_p(elem_val)
       {
-        val_type* val_p;
-        memcpy(val_p, elem_val, elem_size); // replace with copy
+        byte_type* val_p;
+        std::copy(val_p, elem_val, elem_size); // replace with copy
       }
 
       CacheElement(const CacheElement& elem) = default;
@@ -84,10 +84,6 @@ class Cache::Impl {
 
   val_type get(key_type key, size_type& val_size) const{
     const auto elem = data_.at(key);
-    // auto elem_iter = data_.find(key);
-    // if (elem_iter == data_.end()) { return nullptr; }
-    // else {
-      // CacheElement elem = elem_iter->second;
     val_size = elem.size;
     evictor_->touch_key(key);
     return elem.val_p;
