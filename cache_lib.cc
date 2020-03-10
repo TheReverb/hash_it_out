@@ -35,16 +35,16 @@ class Cache::Impl {
 
   size_type maxmem_;
   float     max_load_factor_ = 0.75;
-  FifoEvictor*  evictor_;
+  Evictor*  evictor_;
   hash_func hasher_;
   size_type current_size_;
   std::unordered_map<key_type, CacheElement, hash_func> data_;
 
  public:
-  Impl(size_type    maxmem,
-       float        max_load_factor = 0.75,
-       FifoEvictor* evictor         = nullptr,
-       hash_func    hasher          = std::hash<key_type>())
+  Impl(size_type maxmem,
+       float     max_load_factor = 0.75,
+       Evictor*  evictor         = nullptr,
+       hash_func hasher          = std::hash<key_type>())
   : maxmem_(maxmem)
   , max_load_factor_(max_load_factor)
   , evictor_(evictor)
@@ -60,9 +60,10 @@ class Cache::Impl {
   }
 
   void set(key_type key, val_type val, size_type size){
-    std::cerr << "in set\n";
-    /*
-    if (evictor_ != nullptr) {
+    std::cerr << "in set before member access\n";
+    std::cerr << max_load_factor_;
+    std::cerr << "in set after member access\n";
+    if (evictor_) {
       std::cerr << "in evictor path\n";
       while (current_size_ + size > maxmem_) {
         const key_type evictee_key = evictor_->evict();
@@ -78,7 +79,7 @@ class Cache::Impl {
           evictor_->touch_key(key);
           current_size_ += size;
       }
-    } */
+    }
     std::cerr << "after evictor path\n";
     if (current_size_ + size < maxmem_) {
           std::cerr << "before CacheElement\n";
@@ -102,8 +103,6 @@ class Cache::Impl {
     else {
       CacheElement elem = elem_iter->second;
       current_size_ -= elem.size;
-      // evictor_->remove(key);
-          // we don't need to evict the key; if it gets evicted later, we'll just ignore it.
       data_.erase(key);
       return true;
     }
@@ -127,13 +126,17 @@ class Cache::Impl {
 // and new insertions fail after maxmem has been exceeded).
 // hasher: Hash function to use on the keys. Defaults to C++'s std::hash.
 Cache::Cache(size_type maxmem,
+             float     max_load_factor = 0.75,
+             Evictor*  evictor         = nullptr,
+             hash_func hasher          = std::hash<key_type>())
+             /*size_type maxmem,
              float max_load_factor,
-             Evictor* evictor,
-             hash_func hasher)
+             Evictor* evictor = nullptr,
+             hash_func hasher */
 {
   std::unique_ptr<Impl> pImpl_(new Impl(maxmem,
                                         max_load_factor,
-                                        new FifoEvictor(),
+                                        evictor,
                                         hasher));
 }
 
@@ -169,4 +172,31 @@ size_type Cache::space_used() const {
 // Delete all data from the cache
 void Cache::reset() {
   return pImpl_->reset();
+}
+
+#include <cassert>
+int main() {
+  std::cerr << "before Cache\n";
+
+  Cache c(16);
+  val_type first  = "first";
+  val_type second = "second";
+  val_type third  = "third";
+  val_type fourth = "fourth";
+
+  std::cerr << "before 1\n";
+  c.set("1", first, 5);
+  assert(c.space_used() == 6);
+  std::cerr << "after 1\n";
+
+  c.set("2", second, 6);
+  assert(c.space_used() == 11);
+
+  c.set("3", third, 5);
+  assert(c.space_used() == 16);
+
+  c.set("4", fourth, 6);
+  assert(c.space_used() == 11);
+
+return 0;
 }
