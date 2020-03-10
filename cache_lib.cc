@@ -18,12 +18,8 @@ class Cache::Impl {
 
       CacheElement(size_type elem_size, val_type elem_val)
       : size(elem_size)
-      // , val_p(elem_val)
       {
-        std::cout << "before copy\n";
         byte_type* val_p = new byte_type(*elem_val);
-        std::cout << "after copy\n";
-        // *val_p = *elem_val;
       }
 
       CacheElement(const CacheElement& elem) = default;
@@ -60,11 +56,8 @@ class Cache::Impl {
   }
 
   void set(key_type key, val_type val, size_type size){
-    std::cerr << "in set before member access\n";
-    std::cerr << max_load_factor_;
-    std::cerr << "in set after member access\n";
+
     if (evictor_) {
-      std::cerr << "in evictor path\n";
       while (current_size_ + size > maxmem_) {
         const key_type evictee_key = evictor_->evict();
         const auto elemi = data_.find(evictee_key);
@@ -80,15 +73,10 @@ class Cache::Impl {
           current_size_ += size;
       }
     }
-    std::cerr << "after evictor path\n";
     if (current_size_ + size < maxmem_) {
-          std::cerr << "before CacheElement\n";
           const CacheElement new_elem(size, val); // I think this is getting cleaned up at the end of the scope
-          std::cerr << "after CacheElement\n";
           data_.insert_or_assign(key, new_elem);
-          std::cerr << "after insert_or_assign\n";
           current_size_ += size;
-          std::cerr << "after size update\n";
     }
   }
 
@@ -178,15 +166,30 @@ int main() {
   val_type third  = "third";
   val_type fourth = "fourth";
 
+  size_type val_size;
+
   std::cerr << "before 1\n";
-  c.set("1", first, 5);
-  assert(c.space_used() == 5);
+  c.set("1", first, 6);
+  assert(c.space_used() == 6);
+
+  assert(c.get("1", val_size) == "first");
+
+
   std::cerr << "after 1\n";
-  c.set("2", second, 6);
-  assert(c.space_used() == 11);
-  c.set("3", third, 5);
-  assert(c.space_used() == 16);
-  c.set("4", fourth, 6);
-  assert(c.space_used() == 11);
+  c.set("2", second, 7);
+  assert(c.space_used() == 13);
+  c.set("3", third, 6);
+  assert(c.space_used() == 13);
+  c.set("4", fourth, 7);
+  std::cout << c.space_used() << '\n';
+  assert(c.space_used() == 13);
+
+
+
+
+
+
+
+
   return 0;
 }
