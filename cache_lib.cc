@@ -20,16 +20,16 @@ class Cache::Impl {
       : size(elem_size)
       // , val_p(elem_val)
       {
-        std::cout << "before copy";
+        std::cout << "before copy\n";
         byte_type* val_p = new byte_type(*elem_val);
-        std::cout << "after copy";
+        std::cout << "after copy\n";
         // *val_p = *elem_val;
       }
 
       CacheElement(const CacheElement& elem) = default;
 
       ~CacheElement(){
-        delete val_p;
+        // delete val_p;
       }
   }; // end CacheElement
 
@@ -83,10 +83,12 @@ class Cache::Impl {
     std::cerr << "after evictor path\n";
     if (current_size_ + size < maxmem_) {
           std::cerr << "before CacheElement\n";
-          const CacheElement new_elem(size, val);
+          const CacheElement new_elem(size, val); // I think this is getting cleaned up at the end of the scope
           std::cerr << "after CacheElement\n";
           data_.insert_or_assign(key, new_elem);
+          std::cerr << "after insert_or_assign\n";
           current_size_ += size;
+          std::cerr << "after size update\n";
     }
   }
 
@@ -126,18 +128,11 @@ class Cache::Impl {
 // and new insertions fail after maxmem has been exceeded).
 // hasher: Hash function to use on the keys. Defaults to C++'s std::hash.
 Cache::Cache(size_type maxmem,
-             float     max_load_factor = 0.75,
-             Evictor*  evictor         = nullptr,
-             hash_func hasher          = std::hash<key_type>())
-             /*size_type maxmem,
              float max_load_factor,
-             Evictor* evictor = nullptr,
-             hash_func hasher */
+             Evictor* evictor,
+             hash_func hasher)
 {
-  std::unique_ptr<Impl> pImpl_(new Impl(maxmem,
-                                        max_load_factor,
-                                        evictor,
-                                        hasher));
+  pImpl_ = std::make_unique<Impl>(Impl(maxmem, max_load_factor, evictor, hasher));
 }
 
 Cache::~Cache() = default;
@@ -177,7 +172,6 @@ void Cache::reset() {
 #include <cassert>
 int main() {
   std::cerr << "before Cache\n";
-
   Cache c(16);
   val_type first  = "first";
   val_type second = "second";
@@ -186,17 +180,13 @@ int main() {
 
   std::cerr << "before 1\n";
   c.set("1", first, 5);
-  assert(c.space_used() == 6);
+  assert(c.space_used() == 5);
   std::cerr << "after 1\n";
-
   c.set("2", second, 6);
   assert(c.space_used() == 11);
-
   c.set("3", third, 5);
   assert(c.space_used() == 16);
-
   c.set("4", fourth, 6);
   assert(c.space_used() == 11);
-
-return 0;
+  return 0;
 }
