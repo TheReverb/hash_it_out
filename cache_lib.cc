@@ -18,10 +18,12 @@ class Cache::Impl {
 
       CacheElement(size_type elem_size, val_type elem_val)
       : size(elem_size)
-      , val_p(elem_val)
+      // , val_p(elem_val)
       {
-        byte_type* val_p;
-        std::copy(val_p, elem_val, elem_size); // replace with copy
+        std::cout << "before copy";
+        byte_type* val_p = new byte_type(*elem_val);
+        std::cout << "after copy";
+        // *val_p = *elem_val;
       }
 
       CacheElement(const CacheElement& elem) = default;
@@ -35,7 +37,7 @@ class Cache::Impl {
   float     max_load_factor_ = 0.75;
   FifoEvictor*  evictor_;
   hash_func hasher_;
-  size_type current_size_; //in uint32_t
+  size_type current_size_;
   std::unordered_map<key_type, CacheElement, hash_func> data_;
 
  public:
@@ -58,7 +60,10 @@ class Cache::Impl {
   }
 
   void set(key_type key, val_type val, size_type size){
+    std::cerr << "in set\n";
+    /*
     if (evictor_ != nullptr) {
+      std::cerr << "in evictor path\n";
       while (current_size_ + size > maxmem_) {
         const key_type evictee_key = evictor_->evict();
         const auto elemi = data_.find(evictee_key);
@@ -67,16 +72,18 @@ class Cache::Impl {
           del(evictee_key);
         }
       }
-
       if (current_size_ + size < maxmem_) {
           const CacheElement new_elem(size, val);
           data_.insert_or_assign(key, new_elem);
           evictor_->touch_key(key);
           current_size_ += size;
       }
-    }
-    else if (current_size_ + size < maxmem_) {
+    } */
+    std::cerr << "after evictor path\n";
+    if (current_size_ + size < maxmem_) {
+          std::cerr << "before CacheElement\n";
           const CacheElement new_elem(size, val);
+          std::cerr << "after CacheElement\n";
           data_.insert_or_assign(key, new_elem);
           current_size_ += size;
     }
