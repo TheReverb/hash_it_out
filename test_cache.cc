@@ -7,10 +7,10 @@ int main() {
 
   c = Cache(16)
 
-  std::string* first = "first";
-  std::string* second = "second";
-  std::string* third = "third";
-  std::string* fourth = "fourth";
+  val_type first = "first";
+  val_type second = "second";
+  val_type third = "third";
+  val_type fourth = "fourth";
 
 
   c.set("1", first, 5);
