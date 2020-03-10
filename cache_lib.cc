@@ -56,7 +56,6 @@ class Cache::Impl {
   }
 
   void set(key_type key, val_type val, size_type size){
-
     if (evictor_) {
       while (current_size_ + size > maxmem_) {
         const key_type evictee_key = evictor_->evict();
@@ -83,7 +82,9 @@ class Cache::Impl {
   val_type get(key_type key, size_type& val_size) const{
     const auto elem = data_.at(key);
     val_size = elem.size;
-    evictor_->touch_key(key);
+    if (evictor_ != nullptr) {
+      evictor_->touch_key(key);
+    }
     return elem.val_p;
   }
 
@@ -183,11 +184,6 @@ int main() {
   c.set("4", fourth, 7);
   std::cout << c.space_used() << '\n';
   assert(c.space_used() == 13);
-
-
-
-
-
 
 
 
