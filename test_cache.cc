@@ -52,11 +52,12 @@ void test_set_and_get(){
   result = c.get(third_key, val_size);
   assert(result == nullptr);
   assert(val_size == 7);
+  assert(c.space_used() == 13);
 
   //this should overwrite the value stored at key first_key
   c.set(first_key, fourth, 7);
 
-  assert(c.space_used() == 13);
+  assert(c.space_used() == 14);
   result = c.get(first_key, val_size);
   std::cout << result << '\n';
   assert(result != nullptr);
@@ -82,7 +83,7 @@ void test_del(){
   Cache::val_type result = c.get(first_key, val_size);
   assert(result != nullptr);
   assert(std::strcmp(result, "first") == 0);
-  assert(val_size == 13);
+  assert(val_size == 6);
 
   assert(c.del(first_key) == true);
   assert(c.space_used() == 7);
@@ -119,10 +120,10 @@ void test_reset(){
   c.reset();
 
   assert(c.get(first_key, val_size) == nullptr);
-  assert(val_size == 0);
+  assert(val_size == 6);
 
   assert(c.get(second_key, val_size) == nullptr);
-  assert(val_size == 0);
+  assert(val_size == 6);
 
   assert(c.del(third_key) == false);
   assert(c.space_used() == 0);
@@ -141,7 +142,6 @@ int main() {
 
 
   std::cout << "All cache tests passing with no evictor. \n";
-  delete c;
   
   return 0;
 }

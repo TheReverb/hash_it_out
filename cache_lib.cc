@@ -49,23 +49,28 @@ class Cache::Impl {
     delete evictor_;
   }
 
-  void set(key_type key, val_type val, size_type size){
+  void set(key_type key, val_type val, size_type size) {
     if (size > maxmem_) {return;}
+    const auto old_elemi = data_.find(key);
+    if (old_elemi != data_.end()) {
+      current_size_ -= old_elemi->second.size;
+    }
     if (current_size_ + size > maxmem_) {
       if (evictor_ != nullptr) {
         clear_space(size);
         evictor_->touch_key(key);
+        insert_or_assign(key, val, size);
       }
-      const auto old_elemi = data_.find(key);
-      if (old_elemi != data_.end()) {
-        current_size_ -= old_elemi->second.size;
-      }
-      const CacheElement new_elem(size, val);
-      data_.insert_or_assign(key, new_elem);
-      current_size_ += size;
-      std::cerr << size << "\n";
-      std::cerr << current_size_ << "\n";
     }
+    else {
+      insert_or_assign(key, val, size);
+    }
+  }
+
+  void insert_or_assign(key_type key, val_type val, size_type size) {
+    const CacheElement new_elem(size, val);
+    data_.insert_or_assign(key, new_elem);
+    current_size_ += size;
   }
 
   void clear_space(size_type size) {
@@ -111,7 +116,9 @@ class Cache::Impl {
 
   void reset() {
     data_.clear();
-    while (evictor_->evict() != "") {}
+    if (evictor_ != nullptr) {
+      while (evictor_->evict() != "") {}
+    }
     current_size_ = 0;
   }
 }; //end Impl
