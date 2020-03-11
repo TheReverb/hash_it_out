@@ -7,3 +7,9 @@ This project involved the creation of a generic look-aside cache using a set API
 In order to keep the cache running in constant time with the addition of an evictor, our FIFO evictor uses an std::list to keep track of keys which have been touched. Because list::push_back() and list::pop_front() run in constant time, the FIFO evictor is simply an interface for queue which runs in constant time.
 
 We've included some tests designed to confirm the proper behavior of each function in our implementation, including evictor functions. Additionally, a make script is included to ensure the library dependencies are sorted out. 
+
+To build: 
+    $ ./make.sh
+
+To test: 
+    $ ./run_tests.sh`

@@ -5,3 +5,4 @@ g++ -std=c++17 -O3 -Wall -Wextra -pedantic -fPIC -shared fifo_evictor.cc -o fifo
 g++ -std=c++17 -O3 -Wall -Wextra -pedantic -fpie test_cache.cc -L. -l:cache_lib.so -o test_cache
 
 g++ -std=c++17 -O3 -Wall -Wextra -pedantic -fpie -L. test_evictor.cc -l:fifo_evictor.so -o test_evictor
+
