@@ -8,6 +8,12 @@ In order to keep the cache running in constant time with the addition of an evic
 
 We've included some tests designed to confirm the proper behavior of each function in our implementation, including evictor functions. Additionally, a make script is included to ensure the library dependencies are sorted out. 
 
-To build: `$ ./make.sh`
+To build:
+```
+$ ./make.sh
+```
 
-To test: `$ ./run_tests.sh`
+To test: 
+```
+$ ./run_tests.sh
+```
