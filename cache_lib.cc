@@ -8,12 +8,13 @@
 
 class Cache::Impl {
  private:
+
   class CacheElement {
     public:
       size_type size;
       val_type* val_p;
 
-      CacheElement(size_type elem_size, val_type elem_val)
+      CacheElement(size_type elem_size, val_type elem_val) //CacheElement object stores the size and a deep copy of the value
       : size(elem_size)
       , val_p(new val_type(elem_val))
       {
@@ -28,7 +29,7 @@ class Cache::Impl {
   Evictor*  evictor_;
   hash_func hasher_;
   size_type current_size_;
-  std::unordered_map<key_type, CacheElement, hash_func> data_;
+  std::unordered_map<key_type, CacheElement, hash_func> data_; //unordered_map is used as a hashtable to lookup elements via keys in constant time.
 
  public:
   Impl(size_type maxmem,
@@ -42,10 +43,10 @@ class Cache::Impl {
   , current_size_(0)
   , data_(std::unordered_map<key_type, CacheElement, hash_func>(16, hasher_))
   {
-    data_.max_load_factor(max_load_factor_);
+    data_.max_load_factor(max_load_factor_); //this causes the unordered_map to dynamically resize whenever the max_load_factor is exceeded.
   }
 
-  ~Impl(){ //this will most likely involve calling reset().
+  ~Impl(){
     delete evictor_;
   }
 
@@ -69,11 +70,11 @@ class Cache::Impl {
 
   void insert_or_assign(key_type key, val_type val, size_type size) {
     const CacheElement new_elem(size, val);
-    data_.insert_or_assign(key, new_elem);
-    current_size_ += size;
+    data_.insert_or_assign(key, new_elem); //insert or assign will replace the key-value pair
+    current_size_ += size;                 //if the key exists, and will add the pair if the key is not in use.
   }
 
-  void clear_space(size_type size) {
+  void clear_space(size_type size) {    //this function will loop until the cache has enough space for the new element, while calling evict.
     while (current_size_ + size > maxmem_) {
       const key_type evictee_key = evictor_->evict();
       const auto elemi = data_.find(evictee_key);
@@ -86,7 +87,7 @@ class Cache::Impl {
 
   val_type get(key_type key, size_type& val_size) const{
     const auto elemi = data_.find(key);
-    if (elemi != data_.end()) {
+    if (elemi != data_.end()) { //if this is false, the element is not in the unordered_map.
       val_type val_p = *elemi->second.val_p;
       val_size = elemi->second.size;
       if (evictor_ != nullptr) {
@@ -117,7 +118,7 @@ class Cache::Impl {
   void reset() {
     data_.clear();
     if (evictor_ != nullptr) {
-      while (evictor_->evict() != "") {}
+      while (evictor_->evict() != "") {} //if the evictor returns "", it is empty.
     }
     current_size_ = 0;
   }
