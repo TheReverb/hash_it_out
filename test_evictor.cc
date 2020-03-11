@@ -10,6 +10,7 @@ void reset() {
 
 void test_touch_key() {
   reset();
+
   e.touch_key("hello");
   assert(e.evict() == "hello");
 
@@ -19,6 +20,7 @@ void test_touch_key() {
 
 void test_evict() {
   reset();
+
   assert(e.evict() == "");
 
   e.touch_key("2");
@@ -35,7 +37,10 @@ void test_evict() {
 int main() {
   reset();
   test_touch_key();
+  reset();
   test_evict();
+  reset();
+
   std::cout << "All evictor tests passing \n";
   return 0;
 }
