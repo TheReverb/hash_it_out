@@ -6,28 +6,27 @@
 #include "cache.hh"
 
 using byte_type = char;
-using val_type = const byte_type*;
+using val_type  = const byte_type*;
 using size_type = uint32_t;
+class CacheElement {
+  public:
+    size_type size;
+    val_type* val_p;
+
+    CacheElement(size_type elem_size, val_type elem_val)
+    : size(elem_size)
+    , val_p(new val_type(elem_val))
+    {
+    }
+
+    CacheElement(const CacheElement& elem) = default;
+
+    ~CacheElement() = default;
+
+}; // end CacheElement
 
 class Cache::Impl {
  private:
-  class CacheElement {
-    public:
-      size_type size;
-      val_type val_p;
-
-      CacheElement(size_type elem_size, val_type elem_val)
-      : size(elem_size)
-      {
-        byte_type* val_p = new byte_type(*elem_val);
-      }
-
-      CacheElement(const CacheElement& elem) = default;
-
-      ~CacheElement(){
-        // delete val_p;
-      }
-  }; // end CacheElement
 
   size_type maxmem_;
   float     max_load_factor_ = 0.75;
@@ -80,12 +79,18 @@ class Cache::Impl {
   }
 
   val_type get(key_type key, size_type& val_size) const{
-    const auto elem = data_.at(key);
-    val_size = elem.size;
-    if (evictor_ != nullptr) {
-      evictor_->touch_key(key);
+    const auto elemi = data_.find(key);
+    if (elemi != data_.end()) {
+      val_type val_p = *elemi->second.val_p;
+      val_size = elemi->second.size;
+      if (evictor_ != nullptr) {
+        evictor_->touch_key(key);
+      }
+      return val_p;
     }
-    return elem.val_p;
+    else {
+      return nullptr;
+    }
   }
 
   bool del(key_type key) {
@@ -157,35 +162,37 @@ size_type Cache::space_used() const {
 void Cache::reset() {
   return pImpl_->reset();
 }
-
 #include <cassert>
+
 int main() {
-  std::cerr << "before Cache\n";
+  // std::cerr << "before Cache\n";
   Cache c(16);
-  val_type first  = "first";
-  val_type second = "second";
-  val_type third  = "third";
-  val_type fourth = "fourth";
+  byte_type* first = "first";
+  val_type second  = "second";
+  val_type third   = "third";
+  val_type fourth  = "fourth";
 
-  size_type val_size;
+  size_type val_size = 0;
 
-  std::cerr << "before 1\n";
+  // std::cerr << "before 1\n";
   c.set("1", first, 6);
+  first = "third";
   assert(c.space_used() == 6);
-
   assert(c.get("1", val_size) == "first");
+  assert(val_size == 6);
 
 
-  std::cerr << "after 1\n";
+  // std::cerr << "after 1\n";
   c.set("2", second, 7);
   assert(c.space_used() == 13);
+  assert(c.get("2", val_size) == "second");
   c.set("3", third, 6);
   assert(c.space_used() == 13);
   c.set("4", fourth, 7);
-  std::cout << c.space_used() << '\n';
+  // std::cout << c.space_used() << '\n';
   assert(c.space_used() == 13);
 
-
+  std::cout << "all tests passing\n";
 
   return 0;
 }
