@@ -141,6 +141,7 @@ int main() {
 
 
   std::cout << "All cache tests passing with no evictor. \n";
-
+  delete c;
+  
   return 0;
 }
