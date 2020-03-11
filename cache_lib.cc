@@ -50,26 +50,32 @@ class Cache::Impl {
   }
 
   void set(key_type key, val_type val, size_type size){
-    if (evictor_) {
-      while (current_size_ + size > maxmem_) {
-        const key_type evictee_key = evictor_->evict();
-        const auto elemi = data_.find(evictee_key);
-        if (elemi != data_.end()) {
-          current_size_ -= elemi->second.size;
-          del(evictee_key);
-        }
+    if (size > maxmem_) {return;}
+    if (current_size_ + size > maxmem_) {
+      if (evictor_ != nullptr) {
+        clear_space(size);
+        evictor_->touch_key(key);
       }
-      if (current_size_ + size < maxmem_) {
-          const CacheElement new_elem(size, val);
-          data_.insert_or_assign(key, new_elem);
-          evictor_->touch_key(key);
-          current_size_ += size;
+      const auto old_elemi = data_.find(key);
+      if (old_elemi != data_.end()) {
+        current_size_ -= old_elemi->second.size;
       }
+      const CacheElement new_elem(size, val);
+      data_.insert_or_assign(key, new_elem);
+      current_size_ += size;
+      std::cerr << size << "\n";
+      std::cerr << current_size_ << "\n";
     }
-    if (current_size_ + size < maxmem_) {
-          const CacheElement new_elem(size, val); // I think this is getting cleaned up at the end of the scope
-          data_.insert_or_assign(key, new_elem);
-          current_size_ += size;
+  }
+
+  void clear_space(size_type size) {
+    while (current_size_ + size > maxmem_) {
+      const key_type evictee_key = evictor_->evict();
+      const auto elemi = data_.find(evictee_key);
+      if (elemi != data_.end()) {
+        current_size_ -= elemi->second.size;
+        del(evictee_key);
+      }
     }
   }
 
