@@ -21,7 +21,10 @@ class Cache::Impl {
       }
 
       CacheElement(const CacheElement& elem) = default;
-      ~CacheElement() = default;
+
+      ~CacheElement() {
+        delete val_p;
+      }
   }; // end CacheElement
 
   size_type maxmem_;
@@ -29,7 +32,7 @@ class Cache::Impl {
   Evictor*  evictor_;
   hash_func hasher_;
   size_type current_size_;
-  std::unordered_map<key_type, CacheElement, hash_func> data_; //unordered_map is used as a hashtable to lookup elements via keys in constant time.
+  std::unordered_map<key_type, CacheElement*, hash_func> data_; //unordered_map is used as a hashtable to lookup elements via keys in constant time.
 
  public:
   Impl(size_type maxmem,
@@ -41,7 +44,7 @@ class Cache::Impl {
   , evictor_(evictor)
   , hasher_(hasher)
   , current_size_(0)
-  , data_(std::unordered_map<key_type, CacheElement, hash_func>(16, hasher_))
+  , data_(std::unordered_map<key_type, CacheElement*, hash_func>(16, hasher_))
   {
     data_.max_load_factor(max_load_factor_); //this causes the unordered_map to dynamically resize whenever the max_load_factor is exceeded.
   }
@@ -54,7 +57,7 @@ class Cache::Impl {
     if (size > maxmem_) {return;}
     const auto old_elemi = data_.find(key);
     if (old_elemi != data_.end()) {
-      current_size_ -= old_elemi->second.size;
+      current_size_ -= old_elemi->second->size;
     }
     if (current_size_ + size > maxmem_) {
       if (evictor_ != nullptr) {
@@ -69,7 +72,7 @@ class Cache::Impl {
   }
 
   void insert_or_assign(key_type key, val_type val, size_type size) {
-    const CacheElement new_elem(size, val);
+    auto new_elem = new CacheElement(size, val);
     data_.insert_or_assign(key, new_elem); //insert or assign will replace the key-value pair
     current_size_ += size;                 //if the key exists, and will add the pair if the key is not in use.
   }
@@ -79,7 +82,7 @@ class Cache::Impl {
       const key_type evictee_key = evictor_->evict();
       const auto elemi = data_.find(evictee_key);
       if (elemi != data_.end()) {
-        current_size_ -= elemi->second.size;
+        current_size_ -= elemi->second->size;
         del(evictee_key);
       }
     }
@@ -88,8 +91,8 @@ class Cache::Impl {
   val_type get(key_type key, size_type& val_size) const{
     const auto elemi = data_.find(key);
     if (elemi != data_.end()) { //if this is false, the element is not in the unordered_map.
-      val_type val_p = *elemi->second.val_p;
-      val_size = elemi->second.size;
+      val_type val_p = *elemi->second->val_p;
+      val_size = elemi->second->size;
       if (evictor_ != nullptr) {
         evictor_->touch_key(key);
       }
@@ -104,9 +107,10 @@ class Cache::Impl {
     const auto elem_iter = data_.find(key);
     if (elem_iter == data_.end()) { return false; }
     else {
-      CacheElement elem = elem_iter->second;
-      current_size_ -= elem.size;
+      CacheElement* elem = elem_iter->second;
+      current_size_ -= elem->size;
       data_.erase(key);
+      delete elem;
       return true;
     }
   }
@@ -116,6 +120,9 @@ class Cache::Impl {
   }
 
   void reset() {
+    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
+      delete iter->second;
+    }
     data_.clear();
     if (evictor_ != nullptr) {
       while (evictor_->evict() != "") {} //if the evictor returns "", it is empty.
