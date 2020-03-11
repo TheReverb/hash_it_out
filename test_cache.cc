@@ -6,12 +6,12 @@
 int main() {
   // std::cerr << "before Cache\n";
   Cache c(16);
-  byte_type* first = "first";
-  val_type second  = "second";
-  val_type third   = "third";
-  val_type fourth  = "fourth";
+  Cache::byte_type* first = "first";
+  Cache::val_type second  = "second";
+  Cache::val_type third   = "third";
+  Cache::val_type fourth  = "fourth";
 
-  size_type val_size = 0;
+  Cache::size_type val_size = 0;
 
   // std::cerr << "before 1\n";
   c.set("1", first, 6);
