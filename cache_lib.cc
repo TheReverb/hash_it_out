@@ -17,8 +17,7 @@ class Cache::Impl {
       CacheElement(size_type elem_size, val_type elem_val) //CacheElement object stores the size and a deep copy of the value
       : size(elem_size)
       , val_p(new val_type(elem_val))
-      {
-      }
+      { }
 
       CacheElement(const CacheElement& elem) = default;
 
@@ -58,6 +57,7 @@ class Cache::Impl {
     const auto old_elemi = data_.find(key);
     if (old_elemi != data_.end()) {
       current_size_ -= old_elemi->second->size;
+      delete old_elemi->second;
     }
     if (current_size_ + size > maxmem_) {
       if (evictor_ != nullptr) {
