@@ -17,8 +17,5 @@ const key_type FifoEvictor::evict() {
   key_type result = q_.front();
   q_.pop_front();
 
-  // this doesn't work; evictor has to operate in constant time.
-  // q_.remove(result); //this removes every instance of key from the queue. 
-
   return result;
 }
