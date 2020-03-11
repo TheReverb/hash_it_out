@@ -59,7 +59,6 @@ void test_set_and_get(){
 
   assert(c.space_used() == 14);
   result = c.get(first_key, val_size);
-  std::cout << result << '\n';
   assert(result != nullptr);
   assert(std::strcmp(result, "fourth") == 0);
   assert(val_size == 7);
@@ -142,6 +141,6 @@ int main() {
 
 
   std::cout << "All cache tests passing with no evictor. \n";
-  
+
   return 0;
 }
